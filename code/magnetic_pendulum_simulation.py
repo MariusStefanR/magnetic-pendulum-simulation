@@ -21,18 +21,20 @@ def argmax(arr):
 ############################
 
 # Constants
-g = 9.8  # [m/s^2]
+g = 9.8 # [m/s^2]
 L1 = 0.5 # [m]
 L2 = 1.0  # [m]
-
-# Parameters
-t_max = 25.0  # [s]
-dt = 0.01  # [s]
-
-# Magnetic paramters
-K = -15 # 'Magnetic constant'; negative (K > 0) for repulsion and positive (K < 0) for attraction
 m1 = 1.0 # Mass of bob 1 [kg]
 m2 = 1.0 # Mass of bob 2 [kg]
+
+# Parameters
+t_max = 25.0 # [s]
+dt = 0.01 # [s]
+
+# 'Electro-magnetic' paramters
+kC = 1.0 # 'Coulomb constant'
+Q1 = -1.0 # Charge pendulum 1
+Q2 = -2.0 # Charge pendulum 2
    
 # Variables
 time_series = np.arange(0, t_max, dt)
@@ -55,7 +57,7 @@ for i, _ in enumerate(tqdm(time_series[1:-1]), start=1):
     a_grav1 = - (g / L1) * np.sin(theta1[i - 1])
     a_grav2 = - (g / L2) * np.sin(theta2[i - 1])
 
-    # Current positions of each bob (for magnetic force)
+    # Current positions of each bob
     x1 = L1 * np.sin(theta1[i - 1]) 
     y1 = -L1 * np.cos(theta1[i - 1])
 
@@ -71,8 +73,9 @@ for i, _ in enumerate(tqdm(time_series[1:-1]), start=1):
     if r < 1e-6:
         r = 1e-6
 
-    Fx = K * rx / (r**3)
-    Fy = K * ry / (r**3)
+    charge_product = Q1 * Q2
+    Fx = kC * charge_product * rx / (r**3)
+    Fy = kC * charge_product * ry / (r**3)
 
     # Tau on each pendulum
     tau1 = x1 * Fy - y1 * Fx
