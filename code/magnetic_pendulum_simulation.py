@@ -22,13 +22,18 @@ def argmax(arr):
 
 # Constants
 g = 9.8  # [m/s^2]
-L1 = 0.7  # [m]
+L1 = 0.5 # [m]
 L2 = 1.0  # [m]
 
 # Parameters
 t_max = 25.0  # [s]
 dt = 0.01  # [s]
 
+# Magnetic paramters
+K = -15 # 'Magnetic constant'; negative (K > 0) for repulsion and positive (K < 0) for attraction
+m1 = 1.0 # Mass of bob 1 [kg]
+m2 = 1.0 # Mass of bob 2 [kg]
+   
 # Variables
 time_series = np.arange(0, t_max, dt)
 num_steps = len(time_series)
@@ -46,14 +51,48 @@ omega2[0] = 0
 # Run simulation
 for i, _ in enumerate(tqdm(time_series[1:-1]), start=1):
     
-    # Pendulum 1
+    # Gravitational acceleration
     a_grav1 = - (g / L1) * np.sin(theta1[i - 1])
-    omega1[i] = omega1[i - 1] + a_grav1 * dt
-    theta1[i] = theta1[i - 1] + omega1[i] * dt
-
-    # Pendulum 2
     a_grav2 = - (g / L2) * np.sin(theta2[i - 1])
-    omega2[i] = omega2[i - 1] + a_grav2 * dt
+
+    # Current positions of each bob (for magnetic force)
+    x1 = L1 * np.sin(theta1[i - 1]) 
+    y1 = -L1 * np.cos(theta1[i - 1])
+
+    x2 = L2 * np.sin(theta2[i - 1])
+    y2 = -L2 * np.cos(theta2[i - 1])
+
+    # Magnetic force calculation 
+    rx = x2 - x1
+    ry = y2 - y1
+    r = np.sqrt(rx**2 + ry**2)
+
+    # Numercial safeguard to avoid division by zero
+    if r < 1e-6:
+        r = 1e-6
+
+    Fx = K * rx / (r**3)
+    Fy = K * ry / (r**3)
+
+    # Tau on each pendulum
+    tau1 = x1 * Fy - y1 * Fx
+    tau2 = x2 * (-Fy) - y2 * (-Fx)
+
+    # Angular acceleration 
+    I1 = m1 * L1**2
+    I2 = m2 * L2**2
+    alpha_mag1 = tau1 / I1
+    alpha_mag2 = tau2 / I2
+
+    # Total angular acceleration
+    alpha1 = a_grav1 + alpha_mag1
+    alpha2 = a_grav2 + alpha_mag2
+
+    # Euler update for each pendulum
+    omega1[i] = omega1[i - 1] + alpha1 * dt
+    theta1[i] = theta1[i - 1] + omega1[i] * dt
+    
+    omega2[i] = omega2[i - 1] + alpha2 * dt
     theta2[i] = theta2[i - 1] + omega2[i] * dt
 
 # Bob position in Cartesian coordinates
