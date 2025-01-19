@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 import numpy as np
 from matplotlib.animation import FuncAnimation
 from tqdm import tqdm
@@ -53,6 +54,8 @@ omega1[0] = 0
 omega2[0] = 0
 
 # Run simulation
+coulomb_force = np.zeros(num_steps, dtype=np.float32)
+
 for i, _ in enumerate(tqdm(time_series[1:-1]), start=1):
     
     # Gravitational acceleration
@@ -78,6 +81,8 @@ for i, _ in enumerate(tqdm(time_series[1:-1]), start=1):
     charge_product = Q1 * Q2
     Fx_array[i] = kC * charge_product * rx / (r**3)
     Fy_array[i] = kC * charge_product * ry / (r**3)
+
+    coulomb_force[i] = kC * charge_product / (r**2)  # Allow negative values
 
     # Tau on each pendulum
     tau1 = x1 * Fy_array[i] - y1 * Fx_array[i]
@@ -140,12 +145,13 @@ bob_acc2 = (
 
 # General
 plt.rcParams.update({"text.usetex": True, "font.family": "Helvetica"})
-fig = plt.figure(figsize=(4, 4))
-ax_vis = fig.add_subplot(111)
-figure_title = "Two magnetic pendulums (visual view)"
+fig = plt.figure(figsize=(8, 10))
+gs = gridspec.GridSpec(2, 1, height_ratios=[3, 1])
+figure_title = "Two magnetic pendulums"
 fig.suptitle(figure_title, fontsize=20)
 
 # Visual
+ax_vis = fig.add_subplot(gs[0])
 ax_vis.set_xlim(-2.0, 2.0)
 ax_vis.set_ylim(-3.2, 1.2)
 ax_vis.set_aspect("equal", "box")
@@ -157,7 +163,7 @@ rod1 = ax_vis.plot(
     (0, bob_pos1[0, 1]),
     color="black",
     solid_capstyle="round",
-    lw=3,
+    lw=2,
 )[0]
 bob1 = ax_vis.plot(
     (bob_pos1[0, 0]),
@@ -173,7 +179,7 @@ rod2 = ax_vis.plot(
     (0, bob_pos2[0, 1]),
     color="black",
     solid_capstyle="round",
-    lw=3,
+    lw=2,
 )[0]
 bob2 = ax_vis.plot(
     (bob_pos2[0, 0]),
@@ -183,8 +189,20 @@ bob2 = ax_vis.plot(
     color="green",
 )[0]
 
+
+
 # Set up fixpoint
 ax_vis.plot(0, 0, "ok", ms=5, color="pink")
+
+# Force subplot
+ax_force = fig.add_subplot(gs[1])
+times = time_series
+ax_force.set_title("Coulomb-Kraft über die Zeit")
+ax_force.set_xlabel("Zeit [s]")
+ax_force.set_ylabel("Coulomb-Kraft [N]")
+ax_force.grid(True)
+force_line, = ax_force.plot([], [], color="blue", lw=2)
+
 
 # Animation function
 def animate(frame):
@@ -192,13 +210,11 @@ def animate(frame):
     # Pendulum 1
     rod1.set_data([0, bob_pos1[frame, 0]], [0, bob_pos1[frame, 1]])
     bob1.set_data([bob_pos1[frame, 0]], [bob_pos1[frame, 1]])
-    
     vel_arrow1 = ax_vis.arrow(
         bob_pos1[frame, 0], bob_pos1[frame, 1],
         bob_vel1[frame, 0], bob_vel1[frame, 1],
         color="green", head_width=0.05, head_length=0.1
     )
-    
     if frame < num_steps - 1:
         acc_arrow1 = ax_vis.arrow(
             bob_pos1[frame, 0], bob_pos1[frame, 1],
@@ -207,13 +223,11 @@ def animate(frame):
         )
     else:
         acc_arrow1 = None
-
     force_arrow1 = ax_vis.arrow(
         bob_pos1[frame, 0], bob_pos1[frame, 1],
         Fx_array[frame] * 0.1, Fy_array[frame] * 0.1, 
         color="blue", head_width=0.05, head_length=0.1
     )
-
     # Pendulum 2
     rod2.set_data([0, bob_pos2[frame, 0]], [0, bob_pos2[frame, 1]])
     bob2.set_data([bob_pos2[frame, 0]], [bob_pos2[frame, 1]])
@@ -223,7 +237,6 @@ def animate(frame):
         bob_vel2[frame, 0], bob_vel2[frame, 1],
         color="red", head_width=0.05, head_length=0.1
     )
-    
     if frame < num_steps - 1:
         acc_arrow2 = ax_vis.arrow(
             bob_pos2[frame, 0], bob_pos2[frame, 1],
@@ -231,15 +244,23 @@ def animate(frame):
             color="orange", head_width=0.05, head_length=0.1
         )
     else:
-        acc_arrow2 = None    
-    
+        acc_arrow2 = None 
+
     force_arrow2 = ax_vis.arrow(
         bob_pos2[frame, 0], bob_pos2[frame, 1],
         -Fx_array[frame] * 0.1, -Fy_array[frame] * 0.1,
         color="cyan", head_width=0.05, head_length=0.1
     )
-    
-    return [rod1, bob1, rod2, bob2, vel_arrow1, acc_arrow1, vel_arrow2, acc_arrow2, force_arrow1, force_arrow2]
+
+
+    # Update Coulomb-Kraft Graph
+    force_line.set_data(times[:frame], coulomb_force[:frame])
+    max_force = 1.1 * max(abs(np.min(coulomb_force)), abs(np.max(coulomb_force)))
+    ax_force.set_xlim(0, t_max)
+    ax_force.set_ylim(-max_force, max_force)    
+
+
+    return [rod1, bob1, rod2, bob2, vel_arrow1, acc_arrow1, vel_arrow2, acc_arrow2, force_line, force_arrow1, force_arrow2]
 
 # Run animation
 anim = FuncAnimation(fig, animate, frames=num_steps - 1, interval=10, blit=True)
