@@ -43,6 +43,8 @@ theta1 = np.zeros(num_steps, dtype=np.float32)
 theta2 = np.zeros(num_steps, dtype=np.float32)
 omega1 = np.zeros(num_steps, dtype=np.float32)
 omega2 = np.zeros(num_steps, dtype=np.float32)
+Fx_array = np.zeros(num_steps, dtype=np.float32)
+Fy_array = np.zeros(num_steps, dtype=np.float32)
 
 # Initial conditions
 theta1[0] = np.pi / 2
@@ -74,12 +76,12 @@ for i, _ in enumerate(tqdm(time_series[1:-1]), start=1):
         r = 1e-6
 
     charge_product = Q1 * Q2
-    Fx = kC * charge_product * rx / (r**3)
-    Fy = kC * charge_product * ry / (r**3)
+    Fx_array[i] = kC * charge_product * rx / (r**3)
+    Fy_array[i] = kC * charge_product * ry / (r**3)
 
     # Tau on each pendulum
-    tau1 = x1 * Fy - y1 * Fx
-    tau2 = x2 * (-Fy) - y2 * (-Fx)
+    tau1 = x1 * Fy_array[i] - y1 * Fx_array[i]
+    tau2 = x2 * (-Fy_array[i]) - y2 * (-Fx_array[i])
 
     # Angular acceleration 
     I1 = m1 * L1**2
@@ -190,11 +192,13 @@ def animate(frame):
     # Pendulum 1
     rod1.set_data([0, bob_pos1[frame, 0]], [0, bob_pos1[frame, 1]])
     bob1.set_data([bob_pos1[frame, 0]], [bob_pos1[frame, 1]])
+    
     vel_arrow1 = ax_vis.arrow(
         bob_pos1[frame, 0], bob_pos1[frame, 1],
         bob_vel1[frame, 0], bob_vel1[frame, 1],
         color="green", head_width=0.05, head_length=0.1
     )
+    
     if frame < num_steps - 1:
         acc_arrow1 = ax_vis.arrow(
             bob_pos1[frame, 0], bob_pos1[frame, 1],
@@ -203,6 +207,12 @@ def animate(frame):
         )
     else:
         acc_arrow1 = None
+
+    force_arrow1 = ax_vis.arrow(
+        bob_pos1[frame, 0], bob_pos1[frame, 1],
+        Fx_array[frame] * 0.1, Fy_array[frame] * 0.1, 
+        color="blue", head_width=0.05, head_length=0.1
+    )
 
     # Pendulum 2
     rod2.set_data([0, bob_pos2[frame, 0]], [0, bob_pos2[frame, 1]])
@@ -213,6 +223,7 @@ def animate(frame):
         bob_vel2[frame, 0], bob_vel2[frame, 1],
         color="red", head_width=0.05, head_length=0.1
     )
+    
     if frame < num_steps - 1:
         acc_arrow2 = ax_vis.arrow(
             bob_pos2[frame, 0], bob_pos2[frame, 1],
@@ -221,8 +232,14 @@ def animate(frame):
         )
     else:
         acc_arrow2 = None    
-
-    return [rod1, bob1, rod2, bob2, vel_arrow1, acc_arrow1, vel_arrow2, acc_arrow2]
+    
+    force_arrow2 = ax_vis.arrow(
+        bob_pos2[frame, 0], bob_pos2[frame, 1],
+        -Fx_array[frame] * 0.1, -Fy_array[frame] * 0.1,
+        color="cyan", head_width=0.05, head_length=0.1
+    )
+    
+    return [rod1, bob1, rod2, bob2, vel_arrow1, acc_arrow1, vel_arrow2, acc_arrow2, force_arrow1, force_arrow2]
 
 # Run animation
 anim = FuncAnimation(fig, animate, frames=num_steps - 1, interval=10, blit=True)
