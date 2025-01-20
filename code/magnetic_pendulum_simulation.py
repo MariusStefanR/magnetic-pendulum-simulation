@@ -23,9 +23,9 @@ def argmax(arr):
 
 # Constants
 g = 9.8 # [m/s^2]
-L1 = 0.5 # [m]
+L1 = 1.0 # [m]
 L2 = 1.0  # [m]
-m1 = 1.0 # Mass of bob 1 [kg]
+m1 = 0.8 # Mass of bob 1 [kg]
 m2 = 1.0 # Mass of bob 2 [kg]
 
 # Parameters
@@ -34,7 +34,7 @@ dt = 0.01 # [s]
 
 # 'Electro-magnetic' paramters
 kC = 1.0 # 'Coulomb constant'
-Q1 = -1.0 # Charge pendulum 1
+Q1 = 1.0 # Charge pendulum 1
 Q2 = -2.0 # Charge pendulum 2
    
 # Variables
@@ -52,6 +52,17 @@ theta1[0] = np.pi / 2
 theta2[0] = np.pi / -2
 omega1[0] = 0 
 omega2[0] = 0
+
+# Berechnung von kinetischer und potenzieller Energie
+KE1 = 0.5 * m1 * (omega1 * L1)**2
+KE2 = 0.5 * m2 * (omega2 * L2)**2
+
+PE1 = m1 * g * (-L1 * np.cos(theta1))
+PE2 = m2 * g * (-L2 * np.cos(theta2))
+
+E1_total = KE1 + PE1
+E2_total = KE2 + PE2
+
 
 # Run simulation
 coulomb_force = np.zeros(num_steps, dtype=np.float32)
@@ -105,6 +116,16 @@ for i, _ in enumerate(tqdm(time_series[1:-1]), start=1):
     omega2[i] = omega2[i - 1] + alpha2 * dt
     theta2[i] = theta2[i - 1] + omega2[i] * dt
 
+    # Energy calculation
+    KE1[i] = 0.5 * m1 * (omega1[i] * L1)**2
+    KE2[i] = 0.5 * m2 * (omega2[i] * L2)**2
+
+    PE1[i] = m1 * g * (-L1 * np.cos(theta1[i]))
+    PE2[i] = m2 * g * (-L2 * np.cos(theta2[i]))
+
+    E1_total[i] = KE1[i] + PE1[i]
+    E2_total[i] = KE2[i] + PE2[i]
+
 # Bob position in Cartesian coordinates
 bob_pos1 = L1 * np.array([np.sin(theta1), -np.cos(theta1)]).T
 bob_pos2 = L2 * np.array([np.sin(theta2), -np.cos(theta2)]).T
@@ -145,8 +166,8 @@ bob_acc2 = (
 
 # General
 plt.rcParams.update({"text.usetex": True, "font.family": "Helvetica"})
-fig = plt.figure(figsize=(8, 10))
-gs = gridspec.GridSpec(2, 1, height_ratios=[3, 1])
+fig = plt.figure(figsize=(10, 12))
+gs = gridspec.GridSpec(3, 1, height_ratios=[3, 1, 1])
 figure_title = "Two magnetic pendulums"
 fig.suptitle(figure_title, fontsize=20)
 
@@ -156,6 +177,22 @@ ax_vis.set_xlim(-2.0, 2.0)
 ax_vis.set_ylim(-3.2, 1.2)
 ax_vis.set_aspect("equal", "box")
 ax_vis.axis("off")
+
+# Force subplot
+ax_force = fig.add_subplot(gs[1])
+times = time_series
+ax_force.set_title("Coulomb Force Over Time")
+ax_force.set_xlabel("Time [s]")
+ax_force.set_ylabel("Coulomb Force [N]")
+ax_force.grid(True)
+force_line, = ax_force.plot([], [], color="blue", lw=2)
+
+# Energie Subplot
+ax_energy = fig.add_subplot(gs[2])
+ax_energy.set_title("Energy Over Time")
+ax_energy.set_xlabel("Time [s]")
+ax_energy.set_ylabel("Energy [J]")
+ax_energy.grid(True)
 
 # Set up pendulum 1
 rod1 = ax_vis.plot(
@@ -189,19 +226,18 @@ bob2 = ax_vis.plot(
     color="green",
 )[0]
 
+ke_line1, = ax_energy.plot([], [], color="red", label="Kinetic Energy 1")
+pe_line1, = ax_energy.plot([], [], color="blue", label="Potential Energy 1")
+total_line1, = ax_energy.plot([], [], color="purple", label="Total Energy 1")
 
+ke_line2, = ax_energy.plot([], [], linestyle="--", color="orange", label="Kinetic Energy 2")
+pe_line2, = ax_energy.plot([], [], linestyle="--", color="cyan", label="Potential Energy 2")
+total_line2, = ax_energy.plot([], [], linestyle="--", color="green", label="Total Energy 2")
+
+ax_energy.legend()
 
 # Set up fixpoint
 ax_vis.plot(0, 0, "ok", ms=5, color="pink")
-
-# Force subplot
-ax_force = fig.add_subplot(gs[1])
-times = time_series
-ax_force.set_title("Coulomb-Kraft über die Zeit")
-ax_force.set_xlabel("Zeit [s]")
-ax_force.set_ylabel("Coulomb-Kraft [N]")
-ax_force.grid(True)
-force_line, = ax_force.plot([], [], color="blue", lw=2)
 
 
 # Animation function
@@ -257,11 +293,34 @@ def animate(frame):
     force_line.set_data(times[:frame], coulomb_force[:frame])
     max_force = 1.1 * max(abs(np.min(coulomb_force)), abs(np.max(coulomb_force)))
     ax_force.set_xlim(0, t_max)
-    ax_force.set_ylim(-max_force, max_force)    
+    ax_force.set_ylim(-max_force, max_force)  
+
+    # Energie-Graph aktualisieren
+    ke_line1.set_data(times[:frame], KE1[:frame])
+    pe_line1.set_data(times[:frame], PE1[:frame])
+    total_line1.set_data(times[:frame], E1_total[:frame])
+
+    ke_line2.set_data(times[:frame], KE2[:frame])
+    pe_line2.set_data(times[:frame], PE2[:frame])
+    total_line2.set_data(times[:frame], E2_total[:frame])
+
+    ax_energy.set_xlim(0, t_max)
+    max_energy = max(
+        np.max(E1_total), np.max(E2_total),
+        np.max(KE1), np.max(KE2),
+        np.max(PE1), np.max(PE2),
+    ) * 1.1
+    min_energy = min(
+        np.min(E1_total), np.min(E2_total),
+        np.min(KE1), np.min(KE2),
+        np.min(PE1), np.min(PE2),
+    )
+    ax_energy.set_ylim(min_energy, max_energy)
 
 
-    return [rod1, bob1, rod2, bob2, vel_arrow1, acc_arrow1, vel_arrow2, acc_arrow2, force_line, force_arrow1, force_arrow2]
+    return [rod1, bob1, rod2, bob2, vel_arrow1, acc_arrow1, vel_arrow2, acc_arrow2, force_line, force_arrow1, force_arrow2, ke_line1, pe_line1, total_line1, ke_line2, pe_line2, total_line2]
 
 # Run animation
 anim = FuncAnimation(fig, animate, frames=num_steps - 1, interval=10, blit=True)
+plt.tight_layout()
 plt.show()
