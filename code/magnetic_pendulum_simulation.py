@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import numpy as np
 from matplotlib.animation import FuncAnimation
+from matplotlib.widgets import CheckButtons
 from tqdm import tqdm
 
 
@@ -167,19 +168,19 @@ bob_acc2 = (
 # General
 plt.rcParams.update({"text.usetex": True, "font.family": "Helvetica"})
 fig = plt.figure(figsize=(10, 12))
-gs = gridspec.GridSpec(3, 1, height_ratios=[3, 1, 1])
+gs = gridspec.GridSpec(3, 3, width_ratios=[3, 2, 1], height_ratios=[2, 1, 1])
 figure_title = "Two magnetic pendulums"
 fig.suptitle(figure_title, fontsize=20)
 
 # Visual
-ax_vis = fig.add_subplot(gs[0])
+ax_vis = fig.add_subplot(gs[0, 0])
 ax_vis.set_xlim(-2.0, 2.0)
 ax_vis.set_ylim(-3.2, 1.2)
 ax_vis.set_aspect("equal", "box")
 ax_vis.axis("off")
 
 # Force subplot
-ax_force = fig.add_subplot(gs[1])
+ax_force = fig.add_subplot(gs[1, :])
 times = time_series
 ax_force.set_title("Coulomb Force Over Time")
 ax_force.set_xlabel("Time [s]")
@@ -188,11 +189,15 @@ ax_force.grid(True)
 force_line, = ax_force.plot([], [], color="blue", lw=2)
 
 # Energie Subplot
-ax_energy = fig.add_subplot(gs[2])
+ax_energy = fig.add_subplot(gs[2, :])
 ax_energy.set_title("Energy Over Time")
 ax_energy.set_xlabel("Time [s]")
 ax_energy.set_ylabel("Energy [J]")
 ax_energy.grid(True)
+
+ax_checkbox = fig.add_subplot(gs[0, 2])
+ax_checkbox.axis("off")
+ax_checkbox.set_title("Select Energy Graphs", fontsize=12)
 
 # Set up pendulum 1
 rod1 = ax_vis.plot(
@@ -234,11 +239,24 @@ ke_line2, = ax_energy.plot([], [], linestyle="--", color="orange", label="Kineti
 pe_line2, = ax_energy.plot([], [], linestyle="--", color="cyan", label="Potential Energy 2")
 total_line2, = ax_energy.plot([], [], linestyle="--", color="green", label="Total Energy 2")
 
-ax_energy.legend()
+lines = [ke_line1, pe_line1, total_line1, ke_line2, pe_line2, total_line2]
+labels = [line.get_label() for line in lines]
+colors = [line.get_color() for line in lines]
+
+check = CheckButtons(ax_checkbox, labels, actives=[line.get_visible() for line in lines])
+
+for label, color in zip(check.labels, colors):
+    label.set_color(color)
+
+def toggle_lines(label):
+    index = labels.index(label)
+    lines[index].set_visible(not lines[index].get_visible())
+    plt.draw()
+
+check.on_clicked(toggle_lines)
 
 # Set up fixpoint
 ax_vis.plot(0, 0, "ok", ms=5, color="pink")
-
 
 # Animation function
 def animate(frame):
