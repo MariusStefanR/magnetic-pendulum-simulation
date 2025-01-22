@@ -199,7 +199,7 @@ ax_vis = fig.add_subplot(gs[0, 0])
 ax_vis.set_xlim(-2.0, 2.0)
 ax_vis.set_ylim(-3.2, 1.2)
 ax_vis.set_aspect("equal", "box")
-ax_vis.axis("off")
+ax_vis.axis("on")
 
 # Coulomb force subplot
 ax_force = fig.add_subplot(gs[1, :])
@@ -219,8 +219,9 @@ ax_energy.grid(True)
 
 # Checkbox for selecting energy graphs
 ax_checkbox = fig.add_subplot(gs[0, 2])
-ax_checkbox.axis("off")
+ax_checkbox.axis("on")
 ax_checkbox.set_title("Select Energy Graphs", fontsize=12)
+
 
 # Set up pendulum 1
 rod1 = ax_vis.plot(
