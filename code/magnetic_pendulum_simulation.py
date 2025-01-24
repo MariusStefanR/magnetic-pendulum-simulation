@@ -24,7 +24,7 @@ def argmax(arr):
 
 # Constants
 g = 9.8     # [m/s^2]
-L1 = 1.0    # [m]
+L1 = 0.8   # [m]
 L2 = 1.0    # [m]
 m1 = 0.8    # Mass of bob 1 [kg]
 m2 = 1.0    # Mass of bob 2 [kg]
@@ -218,7 +218,7 @@ ax_energy.set_ylabel("Energy [J]")
 ax_energy.grid(True)
 
 # Checkbox for selecting energy graphs
-ax_checkbox = fig.add_subplot(gs[0, 2])
+ax_checkbox = fig.add_subplot(gs[0, 1])
 ax_checkbox.axis("on")
 ax_checkbox.set_title("Select Energy Graphs", fontsize=12)
 
