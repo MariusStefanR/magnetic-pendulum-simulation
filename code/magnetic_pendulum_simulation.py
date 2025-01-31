@@ -27,7 +27,7 @@ g = 9.8     # [m/s^2]
 L1 = 0.8   # [m]
 L2 = 1.0    # [m]
 m1 = 0.8    # Mass of bob 1 [kg]
-m2 = 1.0    # Mass of bob 2 [kg]
+m2 = 1.1    # Mass of bob 2 [kg]
 
 # Parameters
 t_max = 25.0    # [s]
@@ -74,7 +74,7 @@ colors = {
     "kinetic_energy2": "mediumvioletred",
     "potential_energy1": "magenta",
     "potential_energy2": "indigo",
-    "total_energy1": "yellow",
+    "total_energy1": "brown",
     "total_energy2": "teal",
     "coulomb_force": "darkturquoise" 
 }
@@ -311,7 +311,7 @@ def animate(frame):
     
     force_arrow1 = ax_vis.arrow(
         bob_pos1[frame, 0], bob_pos1[frame, 1],
-        Fx_array[frame] * 0.1, Fy_array[frame] * 0.1, 
+        Fx_array[frame] * 0.3, Fy_array[frame] * 0.3, 
         color="blue", head_width=0.05, head_length=0.1
     )
     
@@ -335,7 +335,7 @@ def animate(frame):
 
     force_arrow2 = ax_vis.arrow(
         bob_pos2[frame, 0], bob_pos2[frame, 1],
-        -Fx_array[frame] * 0.1, -Fy_array[frame] * 0.1,
+        -Fx_array[frame] * 0.3, -Fy_array[frame] * 0.3,
         color="cyan", head_width=0.05, head_length=0.1
     )
 
